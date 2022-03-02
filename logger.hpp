@@ -30,30 +30,28 @@ struct log_entry {
 
 class logger {
 public:
-    /**
-     *
-     * @return
-     */
-    template<log_type LogType>
-    [[nodiscard]] const std::vector<log_entry>& log() const {
-        return m_logs.at(LogType);
+    std::vector<log_entry>& operator[] (log_type type) {
+        return m_logs[type];
     }
 
-    /**
-     *
-     * @param msg
-     */
-    template<log_type LogType>
-    void log(const std::string& msg) {
-        m_logs[LogType].emplace_back(msg);
+    const std::vector<log_entry>& operator[] (log_type type) const {
+        return m_logs.at(type);
     }
 
-    std::vector<log_entry>& operator[] (log_type log_type) {
-        return m_logs[log_type];
+    template<log_type Type>
+    void operator()(const std::string& msg) {
+        std::scoped_lock lock(m_mutex);
+        m_logs[Type].emplace_back(msg);
     }
 
-    const std::vector<log_entry>& operator[] (log_type log_type) const {
-        return m_logs.at(log_type);
+    template<log_type Type>
+    std::vector<log_entry>& operator()() {
+        return m_logs[Type];
+    }
+
+    template<log_type Type>
+    const std::vector<log_entry>& operator()() const {
+        return m_logs.at(Type);
     }
 
 private:

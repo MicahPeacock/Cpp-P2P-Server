@@ -20,7 +20,7 @@ public:
 
     const address_type& address() const noexcept { return m_address; }
     const peer_map& peers() const noexcept { return m_peers; }
-    int timestamp() const noexcept { return m_timestamp; }
+    size_t timestamp() const noexcept { return m_timestamp; }
     bool is_running() const noexcept { return m_is_running; }
 
     void join(const peer_type& peer) {

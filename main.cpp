@@ -13,7 +13,7 @@ int main(int argc, const char* argv[]) {
     registry::run(client_addr, addr, ctx);
 
     io_context ioc;
-    std::make_shared<peer_manager>(ioc, ctx.peers, std::make_shared<shared_state>(ctx.address))->run();
+    std::make_shared<peer_manager>(ioc, ctx.peers, std::make_shared<shared_state>(ctx.address), true)->run();
 
     registry::run(client_addr, addr, ctx);
 
