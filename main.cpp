@@ -1,6 +1,7 @@
 #include "net/udp.hpp"
 #include "registry.hpp"
 #include "peer_manager.hpp"
+#include "snippet_manager.hpp"
 
 #include <iostream>
 
@@ -12,7 +13,8 @@ int main(int argc, const char* argv[]) {
     registry::context ctx = { name };
     registry::run(client_addr, addr, ctx);
 
-    io_context ioc;
+    net::io_context ioc;
+    std::make_shared<snippet_manager>(ioc)->run();
     std::make_shared<peer_manager>(ioc, ctx.peers, std::make_shared<shared_state>(ctx.address), true)->run();
 
     registry::run(client_addr, addr, ctx);

@@ -30,27 +30,24 @@ class peer_manager : public std::enable_shared_from_this<peer_manager> {
     static constexpr auto DEFAULT_KEEP_ALIVE = std::chrono::seconds(10);
     static constexpr auto DEFAULT_TIMEOUT    = std::chrono::seconds(30);
 
-    static constexpr bool DEBUG = true;
-
 public:
     using address_type = net::address_v4;
     using peer_type    = net::address_v4;
     using time_type    = clocks::time_type;
 
-    explicit peer_manager(io_context& ioc, std::shared_ptr<shared_state> state, bool debug = false)
+    explicit peer_manager(net::io_context& ioc, std::shared_ptr<shared_state> state, bool debug = false)
             : m_socket(), m_ioc(ioc), m_state(std::move(state)), debug_mode(debug) {
         m_socket.bind(m_state->address());
         m_state->join(m_state->address());
     }
 
-    explicit peer_manager(io_context& ioc, const std::vector<peer_type>& peers, std::shared_ptr<shared_state> state, bool debug = false)
+    explicit peer_manager(net::io_context& ioc, const std::vector<peer_type>& peers, std::shared_ptr<shared_state> state, bool debug = false)
             : peer_manager(ioc, std::move(state), debug) {
         for(const auto& peer : peers)
             m_state->join(peer);
     }
 
     void run() {
-
         std::thread([self = shared_from_this()](net::udp::socket s) {
             self->update(s);
         }, std::move(m_socket.clone())).detach();
@@ -69,7 +66,7 @@ public:
 private:
     void broadcast(const net::udp::socket& sock) {
         while(m_state->is_running()) {
-            if(!m_ioc.outgoing().empty()) {
+            if(m_ioc.has_outgoing()) {
                 const auto message = m_ioc.pop_outgoing();
                 multicast_snippet(sock, message);
             }
@@ -78,11 +75,11 @@ private:
     }
 
     void update(const net::udp::socket& sock) {
-        if(debug_mode) std::cout << "Scheduling keepalive updates..." << std::endl;
+        if(debug_mode) std::cerr << "Scheduling keepalive updates..." << std::endl;
         while(m_state->is_running()) {
-            if(debug_mode) std::cout << "Sending keepalive messages" << std::endl;
+            if(debug_mode) std::cerr << "Sending keepalive messages" << std::endl;
             multicast_update(sock);
-            if(debug_mode) std::cout << "Removing old peers" << std::endl;
+            if(debug_mode) std::cerr << "Removing old peers" << std::endl;
             clean_peer_list();
             std::this_thread::sleep_for(seconds(10));
         }
@@ -91,21 +88,17 @@ private:
     void listen(const net::udp::socket& sock) {
         address_type sender;
         if(debug_mode) {
-            std::cout << "Listening for messages..." << std::endl;
+            std::cerr << "Listening for messages..." << std::endl;
         }
         while(true) {
             char data[128] = {};
             sock.recv_from(net::buffer(data), &sender);
             auto [request, contents] = parse_request(data);
-            if(debug_mode) std::cout << "Got '" << request << "' request from " << sender.to_string() << ": " << contents << std::endl;
+            if(debug_mode) std::cerr << "Got '" << request << "' request from " << sender.to_string() << ": " << contents << std::endl;
             if(request == "peer")
-                std::thread([self = shared_from_this()](address_type peer, const std::string& message){
-                    self->on_peer(peer, message);
-                }, sender, std::move(contents)).detach();
+                on_peer(sender, contents);
             else if(request == "snip")
-                std::thread([self = shared_from_this()](address_type peer, const std::string& message) {
-                    self->on_snip(peer, message);
-                }, sender, std::move(contents)).detach();
+                on_snip(sender, contents);
             else if(request == "stop")
                 break;
         }
@@ -133,7 +126,7 @@ private:
         update_peer(new_peer);
         // TODO: Record in logs
         // TODO: Record in debug
-        if(debug_mode) std::cout << "Handled peer request" << std::endl;
+        if(debug_mode) std::cerr << "Handled peer request" << std::endl;
     }
 
     void on_snip(const address_type& sender, const std::string& content) {
@@ -152,15 +145,15 @@ private:
         for(const auto& [address, time] : m_state->peers()) {
             const auto time_elapsed = current_time - time;
             if(time_elapsed > DEFAULT_TIMEOUT) {
-                std::cout << "Removed " << address << std::endl;
+                std::cerr << "Removed " << address << std::endl;
                 remove_peer(address);
             }
         }
-        if(debug_mode) std::cout << "Removed " << before - m_state->peers().size() << " peers" << std::endl;
+        if(debug_mode) std::cerr << "Removed " << before - m_state->peers().size() << " peers" << std::endl;
     }
 
     void basic_multicast(const net::udp::socket& sock, const std::string& message) const {
-        if(debug_mode) std::cout << "Sending '" << message << "' to " << m_state->peers().size() << " peers." << std::endl;
+        if(debug_mode) std::cerr << "Sending '" << message << "' to " << m_state->peers().size() << " peers." << std::endl;
         for(const auto& [addr, time] : m_state->peers())
             sock.send_to(net::buffer(message), addr);
     }
@@ -173,9 +166,8 @@ private:
         m_state->leave(peer);
     }
 
-    io_context& m_ioc;
+    net::io_context& m_ioc;
 
-    std::shared_ptr<logger> m_logger;
     std::shared_ptr<shared_state> m_state;
     net::udp::socket m_socket;
 
