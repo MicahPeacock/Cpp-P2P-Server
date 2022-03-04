@@ -11,7 +11,7 @@
 
 
 struct source_entry {
-    std::vector<net::address_v4> peers;
+    std::unordered_set<net::address_v4> peers;
     std::string date;
 };
 
@@ -38,7 +38,7 @@ public:
         m_peers.insert(peer);
     }
 
-    void log_source(const std::string& src, const std::vector<net::address_v4>& peers) {
+    void log_source(const std::string& src, const std::unordered_set<net::address_v4>& peers) {
         std::scoped_lock lock(m_mutex);
         m_sources[src] = { peers, clocks::get_current_time_str() };
     }

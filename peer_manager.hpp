@@ -46,10 +46,9 @@ public:
     explicit peer_manager(net::io_context& ioc, std::shared_ptr<shared_state> state, bool debug = false)
             : m_socket(), m_ioc(ioc), m_state(std::move(state)), debug_mode(debug) {
         m_socket.bind(m_state->address());
-        m_state->join(m_state->address());
     }
 
-    explicit peer_manager(net::io_context& ioc, const net::address_v4& src, const std::vector<peer_type>& peers, std::shared_ptr<shared_state> state, bool debug = false)
+    explicit peer_manager(net::io_context& ioc, const net::address_v4& src, const std::unordered_set<peer_type>& peers, std::shared_ptr<shared_state> state, bool debug = false)
             : peer_manager(ioc, std::move(state), debug) {
         for(const auto& peer : peers) {
             m_state->join(peer);

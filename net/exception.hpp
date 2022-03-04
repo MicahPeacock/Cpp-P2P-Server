@@ -3,6 +3,7 @@
 
 #include <cerrno>
 #include <cstring>
+#include <netdb.h>
 
 #include <exception>
 #include <stdexcept>

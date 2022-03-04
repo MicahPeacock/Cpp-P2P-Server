@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <unordered_set>
 #include <utility>
 
 
@@ -51,7 +52,7 @@ struct context {
     std::string filepath = ".";
     address_type address;
     std::string report;
-    std::vector<peer_type> peers;
+    std::unordered_set<peer_type> peers;
 };
 
 /**
@@ -143,8 +144,8 @@ static const std::unordered_map<request, request_handler_t> request_handlers = {
                 std::getline(ss, line);
                 const auto& [saddr, port] = strings::split(line, ':');
                 const address_type addr = { saddr, static_cast<in_port_t>(std::stoul(port)) };
-                if(saddr != "null" && addr != sock.address())
-                    ctx.peers.push_back(addr);
+                if(saddr != "null")
+                    ctx.peers.insert(addr);
             }
             if(strings::ends_with(data, "close\n"))
                 sock.close();
