@@ -50,7 +50,7 @@ std::string get_current_time_str() noexcept {
 namespace strings {
 
 template<typename... Args>
-static std::string join(const std::string& delimiter, Args&&... args) {
+std::string join(const std::string& delimiter, Args&&... args) {
     std::vector<std::string> strings = { args... };
     std::accumulate(std::next(strings.begin()), strings.end(), strings[0], [&](const auto& a, const auto& b) {
         return a + delimiter + b;

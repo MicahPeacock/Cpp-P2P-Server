@@ -9,29 +9,22 @@ namespace net {
 
 class io_context {
 public:
-    [[nodiscard]] const std::queue<std::string>& incoming() const noexcept {
-        return m_incoming;
-    }
-
     [[nodiscard]] bool has_incoming() const noexcept {
         return !m_incoming.empty();
     }
 
     void put_incoming(const std::string& message) noexcept {
         std::scoped_lock lock(m_mutex);
-        m_outgoing.push(message);
+        m_incoming.push(message);
     }
 
     std::string pop_incoming() noexcept {
         std::scoped_lock lock(m_mutex);
-        auto ret = m_outgoing.front();
-        m_outgoing.pop();
+        auto ret = m_incoming.front();
+        m_incoming.pop();
         return ret;
     }
 
-    [[nodiscard]] const std::queue<std::string>& outgoing() const noexcept {
-        return m_outgoing;
-    }
 
     [[nodiscard]] bool has_outgoing() const noexcept {
         return !m_outgoing.empty();

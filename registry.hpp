@@ -41,6 +41,7 @@ inline request to_request(const std::string& str) {
 
 struct context {
     std::string name;
+    std::string filepath = ".";
     address_type address;
     std::string report;
     std::vector<peer_type> peers;
@@ -64,6 +65,21 @@ void write(const socket_type& sock, const std::string& payload) noexcept {
     handle_error(sock);
 }
 
+std::vector<std::string> get_source_files(const std::string& path) {
+    using file_iterator = fs::recursive_directory_iterator;
+    std::vector<std::string> ret;
+    for(const auto& file : file_iterator(path)) {
+        if(file.path().extension() == ".cpp" || file.path().extension() == ".hpp")
+            ret.push_back(file.path().filename());
+    }
+    return ret;
+}
+
+std::string read_file(const std::string& filename) {
+    std::ifstream file(filename);
+    if(!file.is_open()) return "";
+    return { std::istreambuf_iterator<char>(file),std::istreambuf_iterator<char>() };
+}
 
 using request_handler_t = std::function<void(socket_type&, context&)>;
 static const std::unordered_map<request, request_handler_t> request_handlers = {
@@ -75,6 +91,9 @@ static const std::unordered_map<request, request_handler_t> request_handlers = {
         }},
         {request::code,     [](socket_type& sock, context& ctx){
             registry::write(sock, ".cpp");
+            const auto files = get_source_files(ctx.filepath);
+            for(const auto& filename : files)
+                registry::write(sock, read_file(filename));
             registry::write(sock, "...");
         }},
         {request::report,   [](socket_type& sock, context& ctx){

@@ -21,6 +21,7 @@ public:
         }).detach();
     }
 
+private:
     void read(std::istream& in) {
         std::string message;
         while(is_running()) {
