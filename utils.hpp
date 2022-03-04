@@ -31,10 +31,18 @@ using namespace std::chrono;
 
 using time_type = time_point<system_clock, seconds>;
 
+/**
+ *
+ * @return
+ */
 time_type get_current_time() noexcept {
     return time_point_cast<seconds>(system_clock::now());
 }
 
+/**
+ *
+ * @return
+ */
 std::string get_current_time_str() noexcept {
     const auto now  = system_clock::now();
     const auto time = system_clock::to_time_t(now);
@@ -49,6 +57,12 @@ std::string get_current_time_str() noexcept {
 
 namespace strings {
 
+/**
+ *
+ * @param delimiter
+ * @param args
+ * @return
+ */
 template<typename... Args>
 std::string join(const std::string& delimiter, Args&&... args) {
     std::vector<std::string> strings = { args... };
@@ -58,14 +72,32 @@ std::string join(const std::string& delimiter, Args&&... args) {
     return strings[0];
 }
 
+/**
+ *
+ * @param s
+ * @param delimiter
+ * @return
+ */
 std::pair<std::string, std::string> split(const std::string& s, const char delimiter) {
     return std::make_pair(s.substr(0, s.find(delimiter)), s.substr(s.find(delimiter) + 1, s.size()));
 }
 
+/**
+ *
+ * @param s
+ * @param target
+ * @return
+ */
 bool contains(const std::string& s, std::string&& target) {
     return s.find(target) != std::string::npos;
 }
 
+/**
+ *
+ * @param s
+ * @param ending
+ * @return
+ */
 bool ends_with(const std::string& s, const std::string& ending) {
     if(ending.size() > s.size()) return false;
     return std::equal(ending.rbegin(), ending.rend(), s.rbegin());

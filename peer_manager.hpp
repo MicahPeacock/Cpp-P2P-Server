@@ -21,14 +21,22 @@
 
 using namespace std::chrono;
 
+/**
+ *
+ * @param data
+ * @return
+ */
 auto parse_request(const char* data) {
     return std::make_pair<std::string, std::string>({ data, data + 4 }, { data + 4 });
 }
 
 
-class peer_manager : public std::enable_shared_from_this<peer_manager> {
-    static constexpr auto DEFAULT_KEEP_ALIVE = std::chrono::seconds(10);
-    static constexpr auto DEFAULT_TIMEOUT    = std::chrono::seconds(30);
+/**
+ *
+ */
+class peer_manager : public std::enable_shared_from_this<peer_manager>, public logger {
+    static constexpr auto DEFAULT_KEEP_ALIVE = std::chrono::seconds(5);
+    static constexpr auto DEFAULT_TIMEOUT    = std::chrono::seconds(20);
 
 public:
     using address_type = net::address_v4;
@@ -41,12 +49,13 @@ public:
         m_state->join(m_state->address());
     }
 
-    explicit peer_manager(net::io_context& ioc, const std::vector<peer_type>& peers, std::shared_ptr<shared_state> state, bool debug = false)
+    explicit peer_manager(net::io_context& ioc, const net::address_v4& src, const std::vector<peer_type>& peers, std::shared_ptr<shared_state> state, bool debug = false)
             : peer_manager(ioc, std::move(state), debug) {
         for(const auto& peer : peers) {
             m_state->join(peer);
-//            log<log_type::peers>(peer.to_string());
+            log_peer(peer.to_string());
         }
+        log_source(src.to_string(), peers);
     }
 
     void run() {
@@ -75,6 +84,7 @@ private:
             }
             std::this_thread::sleep_for(milliseconds(500));
         }
+        std::cout << "Broadcasting stopped!" << std::endl;
     }
 
     void update(const net::udp::socket& sock) {
@@ -89,6 +99,7 @@ private:
             clean_peer_list();
             std::this_thread::sleep_for(DEFAULT_KEEP_ALIVE);
         }
+        std::cout << "Updating stopped!" << std::endl;
     }
 
     void listen(const net::udp::socket& sock) {
@@ -107,18 +118,19 @@ private:
             else if(request == "stop")
                 break;
         }
+        std::cout << "Listening stopped!" << std::endl;
     }
 
     void multicast_update(const net::udp::socket& sock)  {
         const std::string message = "peer" + sock.address().to_string();
         basic_multicast(sock, message);
-//        for(const auto& [addr, time] : m_state->peers())
-//            log<log_type::send_peers>(strings::join(" ", addr.to_string(), sock.address().to_string()));
+        for(const auto& [addr, time] : m_state->peers())
+            log_sent_peer(addr.to_string(), sock.address().to_string());
     }
 
     void multicast_snippet(const net::udp::socket& sock, const std::string& message) {
-        const std::string snippet = "snip" + std::to_string(m_state->timestamp()) + " " + message;
         m_state->increment_timestamp();
+        const std::string snippet = "snip" + std::to_string(m_state->timestamp()) + " " + message;
         basic_multicast(sock, snippet);
     }
 
@@ -127,9 +139,9 @@ private:
         const peer_type new_peer = { host, static_cast<in_port_t>(std::stoul(port)) };
         update_peer(sender);
         update_peer(new_peer);
-//        log<log_type::peers>(sender.to_string());
-//        log<log_type::peers>(new_peer.to_string());
-//        log<log_type::recv_peers>(sender.to_string() + " " + new_peer.to_string());
+        log_peer(sender.to_string());
+        log_peer(new_peer.to_string());
+        log_recv_peer(sender.to_string(), new_peer.to_string());
         if(debug_mode) std::cerr << "Handled peer request" << std::endl;
     }
 
@@ -137,11 +149,11 @@ private:
         const auto message = strings::split(content, ' ');
         const auto timestamp = std::stoul(message.first);
         const auto snippet = message.second;
-        if(sender != m_state->address())
-            m_ioc.put_incoming(snippet);
         m_state->update(sender);
         m_state->update_timestamp(timestamp);
-//        log<log_type::snippets>(std::to_string(m_state->timestamp()) + " " + snippet + " " + sender.to_string());
+        if(sender != m_state->address())
+            m_ioc.put_incoming(sender, snippet, m_state->timestamp());
+        log_snippet(m_state->timestamp(), snippet, sender.to_string());
     }
 
     void clean_peer_list() {
@@ -150,10 +162,9 @@ private:
         const shared_state::peer_map current_peers = { m_state->peers() };
         for(const auto& [address, time] : current_peers) {
             const auto time_elapsed = current_time - time;
-            if(time_elapsed > DEFAULT_TIMEOUT) {
-                std::cerr << "Removed " << address << std::endl;
+            if(time_elapsed > DEFAULT_TIMEOUT)
                 remove_peer(address);
-            }
+
         }
         if(debug_mode) std::cerr << "Removed " << before - m_state->peers().size() << " peers" << std::endl;
     }
@@ -161,7 +172,6 @@ private:
     void basic_multicast(const net::udp::socket& sock, const std::string& message) const {
         if(debug_mode) std::cerr << "Sending '" << message << "' to " << m_state->peers().size() << " peers." << std::endl;
         for(const auto& [addr, time] : m_state->peers()) {
-            if(addr == sock.address()) continue;
             sock.send_to(net::buffer(message), addr);
         }
     }
@@ -183,40 +193,49 @@ private:
 };
 
 
-//std::string assemble_report(const peer_manager& manager) {
-//    std::stringstream report;
-//
-//    // Report all peers
-//    const auto& peers_log = manager.log<log_type::peers>();
-//    report << peers_log.size() << '\n';
-//    std::for_each(peers_log.begin(), peers_log.end(), [&](const auto& peer){
-//        report << peer.message << '\n';
-//    });
-//
-//    // Report peers learned by sources
-//
-//    // Report peers acquired by 'peer' updates
-//    const auto& recv_peers_log = manager.log<log_type::recv_peers>();
-//    report << recv_peers_log.size() << '\n';
-//    std::for_each(recv_peers_log.begin(), recv_peers_log.end(), [&](const auto& peer){
-//        report << peer.message << ' ' << peer.date << '\n';
-//    });
-//
-//    // Report sent 'peer' updates
-//    const auto& send_peers_log = manager.log<log_type::send_peers>();
-//    report << send_peers_log.size() << '\n';
-//    std::for_each(send_peers_log.begin(), send_peers_log.end(), [&](const auto& peer){
-//        report << peer.message << ' ' << peer.date << '\n';
-//    });
-//
-//    // Report all snippets
-//    const auto& snippet_log = manager.log<log_type::snippets>();
-//    report << snippet_log.size() << '\n';
-//    std::for_each(snippet_log.begin(), snippet_log.end(), [&](const auto& snippet) {
-//        report << snippet.message << '\n';
-//    });
-//
-//    return report.str();
-//}
+/**
+ *
+ * @param manager
+ * @return
+ */
+std::string assemble_report(const peer_manager& manager) {
+    std::stringstream report;
+
+    // Report all peers
+    const auto& peers_log = manager.peer_log();
+    report << peers_log.size() << '\n';
+    for(const auto& peer : peers_log)
+        report << peer << '\n';
+
+    // Report peers learned by sources
+    const auto& source_log = manager.source_log();
+    report << source_log.size() << '\n';
+    for(const auto& [src, entry] : source_log) {
+        report << src << '\n' << entry.date << '\n';
+        report << entry.peers.size() << '\n';
+        for(const auto& peer : entry.peers)
+            report << peer.to_string() << '\n';
+    }
+
+    // Report peers acquired by 'peer' updates
+    const auto& recv_peers_log = manager.recv_peers_log();
+    report << recv_peers_log.size() << '\n';
+    for(const auto& peer : recv_peers_log)
+        report << peer.to << ' ' << peer.from << ' ' << peer.date << '\n';
+
+    // Report sent 'peer' updates
+    const auto& send_peers_log = manager.sent_peers_log();
+    report << send_peers_log.size() << '\n';
+    for(const auto& peer : send_peers_log)
+        report << peer.to << ' ' << peer.from << ' ' << peer.date << '\n';
+
+    // Report all snippets
+    const auto& snippet_log = manager.snippet_log();
+    report << snippet_log.size() << '\n';
+    for(const auto& snippet : snippet_log)
+        report << snippet.timestamp << ' ' << snippet.message << ' ' << snippet.sender << '\n';
+
+    return report.str();
+}
 
 #endif //PEER_MANAGER_HPP

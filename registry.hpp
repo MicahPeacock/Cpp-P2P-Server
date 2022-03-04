@@ -70,7 +70,7 @@ std::vector<std::string> get_source_files(const std::string& path) {
     std::vector<std::string> ret;
     for(const auto& file : file_iterator(path)) {
         if(file.path().extension() == ".cpp" || file.path().extension() == ".hpp")
-            ret.push_back(file.path().filename());
+            ret.push_back(file.path().relative_path());
     }
     return ret;
 }

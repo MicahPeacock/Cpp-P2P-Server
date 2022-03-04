@@ -7,18 +7,28 @@
 
 namespace net {
 
+struct message {
+    std::string sender;
+    std::string content;
+    size_t timestamp;
+};
+
+inline std::ostream& operator<<(std::ostream& os, const message& msg) {
+    return (os << msg.timestamp << ' ' << msg.sender << "> " << msg.content);
+}
+
 class io_context {
 public:
     [[nodiscard]] bool has_incoming() const noexcept {
         return !m_incoming.empty();
     }
 
-    void put_incoming(const std::string& message) noexcept {
+    void put_incoming(const net::address_v4& sender, const std::string& message, size_t timestamp) noexcept {
         std::scoped_lock lock(m_mutex);
-        m_incoming.push(message);
+        m_incoming.push({ sender.to_string(), message, timestamp });
     }
 
-    std::string pop_incoming() noexcept {
+    net::message pop_incoming() noexcept {
         std::scoped_lock lock(m_mutex);
         auto ret = m_incoming.front();
         m_incoming.pop();
@@ -43,7 +53,7 @@ public:
     }
 
 private:
-    std::queue<std::string> m_incoming;
+    std::queue<net::message> m_incoming;
     std::queue<std::string> m_outgoing;
 
     std::mutex m_mutex;
