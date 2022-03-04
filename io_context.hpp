@@ -19,7 +19,8 @@ inline std::ostream& operator<<(std::ostream& os, const message& msg) {
 
 
 /**
- *
+ * This class manages the queues of incoming/outgoing messages from stdout/stdin and the peer-to-peer server.
+ * This class should be stored by reference between the snippet interface and the peer manager server.
  */
 class io_context {
 public:

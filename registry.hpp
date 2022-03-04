@@ -56,7 +56,7 @@ struct context {
 };
 
 /**
- *
+ * Prints any errors
  * @param sock
  */
 void handle_error(const socket_type& sock) noexcept {
@@ -65,8 +65,8 @@ void handle_error(const socket_type& sock) noexcept {
 }
 
 /**
- * Given a TCP socket and a string of data, will send the data across the socket, and print any errors encountered.
- * @param sock
+ * Given a TCP socket and a max number of bytes, will receive the data across the socket, and print any errors encountered.
+ * @param sock A TCP socket to read from.
  * @param n Maximum number of bytes to read from the socket (Max 128);
  * @return a
  */

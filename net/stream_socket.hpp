@@ -23,20 +23,20 @@ public:
     stream_socket& operator=(const stream_socket&) = delete;
 
     /**
-     *
+     * Creates an unbound socket.
      */
     stream_socket() = default;
 
     /**
-     * Creates
+     * Creates a socket from an existing socket handle and claims ownership over the handle.
      * @param handle A socket handle from the operating system.
      */
     explicit stream_socket(socket_t handle)
             : base_t(handle) {}
 
     /**
-     *
-     * @param sock
+     * Move constructor.
+     * @param sock The other socket to move into this one.
      */
     stream_socket(stream_socket&& sock) noexcept
             : base_t(std::move(sock)) {}

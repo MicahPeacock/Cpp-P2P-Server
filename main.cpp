@@ -25,9 +25,9 @@ int main(int argc, const char* argv[]) {
     snippets->run();
     manager->run();     // This method is blocking, and will run once the peer manager receives 'stop'
     snippets->close();
-    ctx.report = assemble_report(*manager);
 
     std::cout << "Sending report..." << std::endl;
+    ctx.report = assemble_report(*manager);
     registry::run(net::address_v4(port), addr, ctx);
     return 0;
 }

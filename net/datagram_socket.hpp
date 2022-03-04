@@ -7,8 +7,9 @@
 namespace net {
 
 /**
+ * Base class for datagram sockets.
  *
- * @tparam AddrType
+ * Datagram sockets are typically connectionless, where each packet is routed and delivered.
  */
 template<typename AddrType>
 class datagram_socket : public socket<AddrType> {
@@ -24,21 +25,21 @@ public:
     datagram_socket& operator=(const datagram_socket&) = delete;
 
     /**
-     *
+     * Creates an unbound datagram socket.
      */
     datagram_socket()
             : base_t(create_handle(ADDRESS_FAMILY)) {}
 
     /**
-     *
+     * Creates a datagram socket from an existing socket handle and claims ownership of the handle.
      * @param handle
      */
     explicit datagram_socket(socket_t handle)
             : base_t(handle) {}
 
     /**
-     *
-     * @param addr
+     * Creates a datagram socket and binds it to the address.
+     * @param  the address to bind.
      */
     explicit datagram_socket(const address_t& addr) {
         auto domain = addr.family();
@@ -50,16 +51,16 @@ public:
     }
 
     /**
-     *
-     * @param sock
+     * Move constructor.
+     * @param sock the other socket to move to this one.
      */
     datagram_socket(datagram_socket&& sock) noexcept
             : base_t(std::move(sock)) {}
 
     /**
-     *
-     * @param rhs
-     * @return
+     * Move assignment operator.
+     * @param rhs the other socket to move to this one.
+     * @return a reference to this object.
      */
     datagram_socket& operator=(datagram_socket&& rhs) noexcept {
         base_t::operator=(std::move(rhs));
@@ -67,9 +68,9 @@ public:
     }
 
     /**
-     *
-     * @param protocol
-     * @return
+     * Creates a pair of connected datagram sockets.
+     * @param protocol the protocol to use for each socket.
+     * @return a pair of datagram sockets
      */
     static std::pair<datagram_socket, datagram_socket> pair(int protocol = 0) {
         auto pr = base_t::pair(ADDRESS_FAMILY, COMM_TYPE, protocol);
@@ -94,7 +95,6 @@ public:
 
     /**
      *
-     * @tparam Family
      * @param addr
      * @return
      */
@@ -104,8 +104,7 @@ public:
     }
 
     /**
-     *
-     * @tparam Family
+     * Sends a message to another socket.
      * @param b
      * @param flags
      * @param dst_addr
@@ -117,8 +116,7 @@ public:
     }
 
     /**
-     *
-     * @tparam Family
+     * Sends a message to another socket.
      * @param b
      * @param dst_addr
      * @return
@@ -129,7 +127,7 @@ public:
     }
 
     /**
-     *
+     * Sends a message to another socket.
      * @param s
      * @param flags
      * @return
@@ -139,8 +137,7 @@ public:
     }
 
     /**
-     *
-     * @tparam Family
+     * Receives a message from another socket.
      * @param payload
      * @param flags
      * @param src_addr
@@ -154,8 +151,7 @@ public:
     }
 
     /**
-     *
-     * @tparam Family
+     * Receives a message from another socket.
      * @param payload
      * @param src_addr
      * @return
@@ -166,7 +162,7 @@ public:
     }
 
     /**
-     *
+     * Receives a message from another socket.
      * @param payload
      * @param flags
      * @return

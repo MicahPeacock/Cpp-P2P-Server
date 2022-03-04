@@ -11,7 +11,7 @@
 
 
 /**
- *
+ * This class manages all shared data passed along the threads in peer_manager.
  */
 class shared_state {
 public:
@@ -41,6 +41,8 @@ public:
     }
     void update(const peer_type& peer) {
         std::scoped_lock lock(m_mutex);
+        if(m_peers.find(peer) == m_peers.end())
+            std::cerr << peer << " has joined." << std::endl;
         m_peers[peer] = clocks::get_current_time();
     }
 

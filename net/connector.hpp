@@ -7,9 +7,9 @@
 namespace net {
 
 /**
+ * Base class for datagram sockets.
  *
- * @tparam StreamSocket
- * @tparam AddrType
+ * Datagram sockets are typically connectionless, where each packet is routed and delivered.
  */
 template<typename StreamSocket, typename AddrType = typename StreamSocket::address_t>
 class connector : public stream_socket<AddrType> {

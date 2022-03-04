@@ -7,10 +7,15 @@
 #include <string>
 #include <vector>
 
+/**
+ * The socket library uses "buffers" to send/receive data.
+ * A buffer is simply a non-owning wrapper around a block of bytes which contain both a pointer to the
+ * data and the size in bytes.
+ */
 namespace net {
 
 /**
- *
+ * Represents a pointer to mutable data.
  */
 class mutable_buffer {
 public:
@@ -37,7 +42,7 @@ private:
 
 
 /**
- *
+ * Represents a pointer to immutable data.
  */
 class const_buffer {
 public:
@@ -67,10 +72,10 @@ private:
 
 
 /**
- *
- * @param buf
- * @param n
- * @return
+ * Moves the pointer in the buffer by a given offset.
+ * @param buf the mutable_buffer instance.
+ * @param n the offset to increment the pointer.
+ * @return a new mutable_buffer instance with the moved pointer.
  */
 constexpr inline mutable_buffer operator+(const mutable_buffer& b, size_t n) noexcept {
     const size_t offset = n < b.size() ? n : b.size();
@@ -80,48 +85,48 @@ constexpr inline mutable_buffer operator+(const mutable_buffer& b, size_t n) noe
 }
 
 /**
- *
- * @param n
- * @param buf
- * @return
+ * Moves the pointer in the buffer by a given offset.
+ * @param n the offset to increment the pointer.
+ * @param buf the mutable_buffer instance.
+ * @return a new mutable_buffer instance with the moved pointer.
  */
 constexpr inline mutable_buffer operator+(size_t n, const mutable_buffer& b) noexcept {
     return b + n;
 }
 
 /**
- *
- * @param buf
- * @return
+ * Constructs a mutable buffer an existing mutable buffer instance.
+ * @param buf a mutable buffer instance.
+ * @return a mutable_buffer instance.
  */
 constexpr inline mutable_buffer buffer(const mutable_buffer& b) noexcept {
     return { b };
 }
 
 /**
- *
- * @param buf
- * @param max_bytes
- * @return
+ * Constructs a mutable buffer an existing mutable buffer instance.
+ * @param buf a mutable buffer instance.
+ * @param max_bytes the maximum number of bytes to save in the buffer.
+ * @return a mutable_buffer instance.
  */
 constexpr inline mutable_buffer buffer(const mutable_buffer& b, size_t max_bytes) noexcept {
     return { b.data(), b.size() < max_bytes ? b.size() : max_bytes };
 }
 
 /**
- *
- * @param data
- * @param size
- * @return
+ * Constructs a mutable buffer from a pointer and a size.
+ * @param data a pointer to the data.
+ * @param size the number of bytes to save in the buffer.
+ * @return a mutable_buffer instance.
  */
 constexpr inline mutable_buffer buffer(void* data, size_t size) noexcept {
     return { data, size };
 }
 
 /**
- *
- * @param data
- * @return
+ * Constructs a mutable buffer from a C-style array.
+ * @param data a C-style array.
+ * @return a mutable_buffer instance.
  */
 template<typename DataType, size_t N>
 constexpr inline mutable_buffer buffer(DataType (&data)[N]) noexcept {
@@ -129,10 +134,10 @@ constexpr inline mutable_buffer buffer(DataType (&data)[N]) noexcept {
 }
 
 /**
- *
- * @param data
- * @param max_bytes
- * @return
+ * Constructs a mutable buffer from a C-style array.
+ * @param data a C-style array.
+ * @param max_bytes the maximum number of bytes to save in the buffer.
+ * @return a mutable_buffer instance.
  */
 template<typename DataType, size_t N>
 constexpr inline mutable_buffer buffer(DataType (&data)[N], size_t max_bytes) noexcept {
@@ -140,9 +145,9 @@ constexpr inline mutable_buffer buffer(DataType (&data)[N], size_t max_bytes) no
 }
 
 /**
- *
- * @param a
- * @return
+ * Constructs a mutable buffer from a C++ std::array.
+ * @param a C++ std::array.
+ * @return a mutable_buffer instance.
  */
 template<typename DataType, size_t N>
 constexpr inline mutable_buffer buffer(std::array<DataType, N>& a) noexcept {
@@ -150,10 +155,10 @@ constexpr inline mutable_buffer buffer(std::array<DataType, N>& a) noexcept {
 }
 
 /**
- *
- * @param a
- * @param max_bytes
- * @return
+ * Constructs a mutable buffer from a C++ std::array.
+ * @param a C++ std::array.
+ * @param max_bytes the maximum number of bytes to save in the buffer.
+ * @return a mutable_buffer instance.
  */
 template<typename DataType, size_t N>
 constexpr inline mutable_buffer buffer(std::array<DataType, N>& a, size_t max_bytes) noexcept {
@@ -161,9 +166,9 @@ constexpr inline mutable_buffer buffer(std::array<DataType, N>& a, size_t max_by
 }
 
 /**
- *
- * @param v
- * @return
+ * Constructs a mutable buffer from a vector.
+ * @param v a C++ vector instance.
+ * @return a mutable_buffer instance.
  */
 template<typename DataType>
 inline mutable_buffer buffer(std::vector<DataType>& v) noexcept {
@@ -171,10 +176,10 @@ inline mutable_buffer buffer(std::vector<DataType>& v) noexcept {
 }
 
 /**
- *
- * @param v
- * @param max_bytes
- * @return
+ * Constructs a mutable buffer from a vector.
+ * @param v a C++ vector instance.
+ * @param max_bytes the maximum number of bytes to save in the buffer.
+ * @return a mutable_buffer instance.
  */
 template<typename DataType>
 inline mutable_buffer buffer(std::vector<DataType>& v, size_t max_bytes) noexcept {
@@ -182,19 +187,19 @@ inline mutable_buffer buffer(std::vector<DataType>& v, size_t max_bytes) noexcep
 }
 
 /**
- *
- * @param s
- * @return
+ * Constructs a mutable buffer from a string.
+ * @param s a string.
+ * @return a mutable_buffer instance.
  */
 inline mutable_buffer buffer(std::string& s) noexcept {
     return { s.data(), s.size() };
 }
 
 /**
- *
- * @param s
- * @param max_bytes
- * @return
+ * Constructs a mutable buffer from a string.
+ * @param s a string.
+ * @param max_bytes the maximum number of bytes to save in the buffer.
+ * @return a mutable_buffer instance.
  */
 inline mutable_buffer buffer(std::string& s, size_t max_bytes) noexcept {
     return { s.data(), s.size() < max_bytes ? s.size() : max_bytes };
@@ -202,10 +207,10 @@ inline mutable_buffer buffer(std::string& s, size_t max_bytes) noexcept {
 
 
 /**
- *
+ * Moves the pointer in the buffer by a given offset.
  * @param b
  * @param n
- * @return
+ * @return a new const_buffer instance with the moved pointer.
  */
 constexpr inline const_buffer operator+(const const_buffer& b, size_t n) noexcept {
     size_t offset = n < b.size() ? n : b.size();
@@ -215,48 +220,48 @@ constexpr inline const_buffer operator+(const const_buffer& b, size_t n) noexcep
 }
 
 /**
- *
+ * Moves the pointer in the buffer by a given offset.
  * @param n
  * @param b
- * @return
+ * @return a new const_buffer instance with the moved pointer.
  */
 constexpr inline const_buffer operator+(size_t n, const const_buffer& b) noexcept {
     return b + n;
 }
 
 /**
- *
+ * Constructs a const buffer an existing const buffer instance.
  * @param b
- * @return
+ * @return a const_buffer instance.
  */
 constexpr inline const_buffer buffer(const const_buffer& b) noexcept {
     return { b };
 }
 
 /**
- *
+ * Constructs a const buffer an existing const buffer instance.
  * @param b
- * @param max_bytes
- * @return
+ * @param max_bytes the maximum number of bytes to save in the buffer.
+ * @return a const_buffer instance.
  */
 constexpr inline const_buffer buffer(const const_buffer& b, size_t max_bytes) noexcept {
     return { b.data(), b.size() < max_bytes ? b.size() : max_bytes };
 }
 
 /**
- *
+ * Constructs a const buffer from a pointer and a size.
  * @param data
- * @param size
- * @return
+ * @param size the number of bytes to save in the buffer.
+ * @return a const_buffer instance.
  */
 constexpr inline const_buffer buffer(const void* data, size_t size) noexcept {
     return { data, size };
 }
 
 /**
- *
- * @param data
- * @return
+ * Constructs a const buffer from a C-style array.
+ * @param data a C-style array.
+ * @return a const_buffer instance.
  */
 template<typename DataType, size_t N>
 constexpr inline const_buffer buffer(const DataType (&data)[N]) noexcept {
@@ -264,10 +269,10 @@ constexpr inline const_buffer buffer(const DataType (&data)[N]) noexcept {
 }
 
 /**
- *
- * @param data
- * @param max_bytes
- * @return
+ * Constructs a const buffer from a C-style array.
+ * @param data a C-style array.
+ * @param max_bytes the maximum number of bytes to save in the buffer.
+ * @return a const_buffer instance.
  */
 template<typename DataType, size_t N>
 constexpr inline const_buffer buffer(const DataType (&data)[N], size_t max_bytes) noexcept {
@@ -275,9 +280,9 @@ constexpr inline const_buffer buffer(const DataType (&data)[N], size_t max_bytes
 }
 
 /**
- *
- * @param a
- * @return
+ * Constructs a const buffer from a C++ std::array.
+ * @param a a C++ std::array instance.
+ * @return a const_buffer instance.
  */
 template<typename DataType, size_t N>
 constexpr inline const_buffer buffer(const std::array<DataType, N>& a) noexcept {
@@ -285,10 +290,10 @@ constexpr inline const_buffer buffer(const std::array<DataType, N>& a) noexcept 
 }
 
 /**
- *
- * @param a
- * @param max_bytes
- * @return
+ * Constructs a const buffer from a C++ std::array.
+ * @param a a C++ std::array instance.
+ * @param max_bytes the maximum number of bytes to save in the buffer.
+ * @return a const_buffer instance.
  */
 template<typename DataType, size_t N>
 constexpr inline const_buffer buffer(const std::array<DataType, N>& a, size_t max_bytes) noexcept {
@@ -296,9 +301,9 @@ constexpr inline const_buffer buffer(const std::array<DataType, N>& a, size_t ma
 }
 
 /**
- *
- * @param a
- * @return
+ * Constructs a const buffer from a C++ std::array.
+ * @param a a C++ std::array instance.
+ * @return a const_buffer instance.
  */
 template<typename DataType, size_t N>
 constexpr inline const_buffer buffer(std::array<const DataType, N>& a) noexcept {
@@ -306,10 +311,10 @@ constexpr inline const_buffer buffer(std::array<const DataType, N>& a) noexcept 
 }
 
 /**
- *
- * @param a
- * @param max_bytes
- * @return
+ * Constructs a const buffer from a C++ std::array.
+ * @param a a C++ std::array instance.
+ * @param max_bytes the maximum number of bytes to save in the buffer.
+ * @return a const_buffer instance.
  */
 template<typename DataType, size_t N>
 constexpr inline const_buffer buffer(std::array<const DataType, N>& a, size_t max_bytes) noexcept {
@@ -317,9 +322,9 @@ constexpr inline const_buffer buffer(std::array<const DataType, N>& a, size_t ma
 }
 
 /**
- *
- * @param v
- * @return
+ * Constructs a const buffer from a vector.
+ * @param v a vector instance.
+ * @return a const_buffer instance.
  */
 template<typename DataType>
 inline const_buffer buffer(const std::vector<DataType>& v) noexcept {
@@ -327,10 +332,10 @@ inline const_buffer buffer(const std::vector<DataType>& v) noexcept {
 }
 
 /**
- *
- * @param v
- * @param max_bytes
- * @return
+ * Constructs a const buffer from a vector.
+ * @param v a vector instance.
+ * @param max_bytes the maximum number of bytes to save in the buffer.
+ * @return a const_buffer instance.
  */
 template<typename DataType>
 inline const_buffer buffer(const std::vector<DataType>& v, size_t max_bytes) noexcept {
@@ -338,9 +343,9 @@ inline const_buffer buffer(const std::vector<DataType>& v, size_t max_bytes) noe
 }
 
 /**
- *
- * @param v
- * @return
+ * Constructs a const buffer from a vector.
+ * @param v a vector instance.
+ * @return a const_buffer instance.
  */
 template<typename DataType>
 inline const_buffer buffer(std::vector<const DataType>& v) noexcept {
@@ -348,10 +353,10 @@ inline const_buffer buffer(std::vector<const DataType>& v) noexcept {
 }
 
 /**
- *
- * @param v
- * @param max_bytes
- * @return
+ * Constructs a const buffer from a vector.
+ * @param v a vector instance.
+ * @param max_bytes the maximum number of bytes to save in the buffer.
+ * @return a const_buffer instance.
  */
 template<typename DataType>
 inline const_buffer buffer(std::vector<const DataType>& v, size_t max_bytes) noexcept {
@@ -359,19 +364,19 @@ inline const_buffer buffer(std::vector<const DataType>& v, size_t max_bytes) noe
 }
 
 /**
- *
- * @param s
- * @return
+ * Constructs a const buffer from a string.
+ * @param s a string.
+ * @return a const_buffer instance.
  */
 inline const_buffer buffer(const std::string& s) noexcept {
     return { s.data(), s.size() };
 }
 
 /**
- *
- * @param s
- * @param max_bytes
- * @return
+ * Constructs a const buffer from a string.
+ * @param s a string.
+ * @param max_bytes the maximum number of bytes to save in the buffer.
+ * @return a const_buffer instance.
  */
 inline const_buffer buffer(const std::string& s, size_t max_bytes) noexcept {
     return { s.data(), s.size() < max_bytes ? s.size() : max_bytes };

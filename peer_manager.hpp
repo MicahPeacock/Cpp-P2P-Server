@@ -22,9 +22,9 @@
 using namespace std::chrono;
 
 /**
- *
- * @param data
- * @return
+ * Takes the data from an incoming message and splits the message between the request and its contents.
+ * @param data the
+ * @return a pair where the first element is the request, and the second element is the contents.
  */
 auto parse_request(const char* data) {
     return std::make_pair<std::string, std::string>({ data, data + 4 }, { data + 4 });
@@ -32,7 +32,11 @@ auto parse_request(const char* data) {
 
 
 /**
- *
+ * This class manages the lifetime of the peer to peer chat server. When run the manager will handle three threads:
+ *     - An update thread which sends 'heartbeat' messages to inform the other peers the client is alive,
+ *          as well as removes any inactive peers in the network.
+ *     - A broadcast thread which multicasts any outgoing messages from the client
+ *     - A listening thread which receives and handles any incoming message from other peers.
  */
 class peer_manager : public std::enable_shared_from_this<peer_manager>, public logger {
     static constexpr auto DEFAULT_KEEP_ALIVE = std::chrono::seconds(5);
@@ -58,7 +62,8 @@ public:
     }
 
     /**
-     *
+     * Starts the peer manager.
+     * The lifetime of the manager depends on the listening thread and will halt once the listening thread finishes.
      */
     void run() {
         std::thread([self = shared_from_this()](net::udp::socket s) {
@@ -79,8 +84,8 @@ public:
 
 private:
     /**
-     *
-     * @param sock
+     * Sends any outgoing messages from the snippet interface and broadcasts them to the other peers.
+     * @param sock The UDP socket to send the message.
      */
     void broadcast(const net::udp::socket& sock) {
         while(m_state->is_running()) {
@@ -88,14 +93,13 @@ private:
                 const auto message = m_ioc.pop_outgoing();
                 multicast_snippet(sock, message);
             }
-            std::this_thread::sleep_for(milliseconds(500));
+            std::this_thread::sleep_for(milliseconds(200));
         }
-        std::cout << "Broadcasting stopped!" << std::endl;
     }
 
     /**
-     *
-     * @param sock
+     * Sends occasional 'heartbeat' messages to the other peers, and removes any inactive peers from the network.
+     * @param sock The UDP socket to send the messages.
      */
     void update(const net::udp::socket& sock) {
         if(debug_mode)
@@ -109,12 +113,12 @@ private:
             clean_peer_list();
             std::this_thread::sleep_for(DEFAULT_KEEP_ALIVE);
         }
-        std::cout << "Updating stopped!" << std::endl;
     }
 
     /**
-     *
-     * @param sock
+     * Listens for incoming requests from other peers and handles requests. The process will close once the "stop"
+     * command has been received.
+     * @param sock The UDP socket to send/receive the the messages.
      */
     void listen(const net::udp::socket& sock) {
         address_type sender;
@@ -132,12 +136,11 @@ private:
             else if(request == "stop")
                 break;
         }
-        std::cout << "Listening stopped!" << std::endl;
     }
 
     /**
-     *
-     * @param sock
+     * Sends a 'heartbeat' message to all active peers.
+     * @param sock The UDP socket to send the message.
      */
     void multicast_update(const net::udp::socket& sock)  {
         const std::string message = "peer" + sock.address().to_string();
@@ -147,9 +150,9 @@ private:
     }
 
     /**
-     *
-     * @param sock
-     * @param message
+     * Sends a snippet message to all active peers.
+     * @param sock The UDP socket to send the message.
+     * @param message The snippet message to send.
      */
     void multicast_snippet(const net::udp::socket& sock, const std::string& message) {
         m_state->increment_timestamp();
@@ -158,25 +161,32 @@ private:
     }
 
     /**
-     *
+     * Request handler to handle 'peer' requests.
+     * If an invalid net address has been received, the peer update will be ignored.
      * @param sender
      * @param content
      */
     void on_peer(const address_type& sender, const std::string& content) {
         const auto& [host, port] = strings::split(content, ':');
-        const peer_type new_peer = { host, static_cast<in_port_t>(std::stoul(port)) };
-        update_peer(sender);
-        update_peer(new_peer);
-        log_peer(sender.to_string());
-        log_peer(new_peer.to_string());
-        log_recv_peer(sender.to_string(), new_peer.to_string());
-        if(debug_mode) std::cerr << "Handled peer request" << std::endl;
+        try {
+            const peer_type new_peer = { host, static_cast<in_port_t>(std::stoul(port)) };
+            update_peer(sender);
+            update_peer(new_peer);
+            log_peer(sender.to_string());
+            log_peer(new_peer.to_string());
+            log_recv_peer(sender.to_string(), new_peer.to_string());
+            if(debug_mode) std::cerr << "Handled peer request" << std::endl;
+        } catch(net::address_error& err) {
+            std::cerr << err.what() << std::endl;
+        }
     }
 
     /**
-     *
-     * @param sender
-     * @param content
+     * Request handler to handle 'snip' requests.
+     * To handle Lamport ordering, the timestamp of the manager will be updated to the maximum between
+     * the current timestamp and the timestamp of the message.
+     * @param sender The address of the sender of the snippet message.
+     * @param content The contents of the snippet message.
      */
     void on_snip(const address_type& sender, const std::string& content) {
         const auto message = strings::split(content, ' ');
@@ -189,7 +199,9 @@ private:
     }
 
     /**
-     *
+     * Removes inactive peers from the active peers list.
+     * This is done by a timeout. When the last updated time of the peer exceeds the default timeout (20 seconds),
+     * the peer is treated as inactive and removed from the network.
      */
     void clean_peer_list() {
         const auto before = m_state->peers().size();
@@ -199,15 +211,14 @@ private:
             const auto time_elapsed = current_time - time;
             if(time_elapsed > DEFAULT_TIMEOUT)
                 remove_peer(address);
-
         }
         if(debug_mode) std::cerr << "Removed " << before - m_state->peers().size() << " peers" << std::endl;
     }
 
     /**
-     *
-     * @param sock
-     * @param message
+     * Sends a message to every peer in the network.
+     * @param sock The UDP socket to send the message.
+     * @param message The message to send.
      */
     void basic_multicast(const net::udp::socket& sock, const std::string& message) const {
         if(debug_mode) std::cerr << "Sending '" << message << "' to " << m_state->peers().size() << " peers." << std::endl;
@@ -234,9 +245,9 @@ private:
 
 
 /**
- *
- * @param manager
- * @return
+ * Takes the current state of a peer manager and generates a runtime report of the peer manager.
+ * @param manager The peer manager to print.
+ * @return a string representing the peer server report.
  */
 std::string assemble_report(const peer_manager& manager) {
     std::stringstream report;

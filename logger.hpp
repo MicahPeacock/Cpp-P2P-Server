@@ -29,7 +29,7 @@ struct snippet_entry {
 
 
 /**
- *
+ * Class that records all server events that has occured in the peer manager.
  */
 class logger {
 public:
