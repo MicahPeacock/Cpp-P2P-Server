@@ -184,8 +184,7 @@ private:
         const auto snippet = message.second;
         m_state->update(sender);
         m_state->update_timestamp(timestamp);
-        if(sender != m_state->address())
-            m_ioc.put_incoming(sender, snippet, m_state->timestamp());
+        m_ioc.put_incoming(sender, snippet, m_state->timestamp());
         log_snippet(m_state->timestamp(), snippet, sender.to_string());
     }
 
