@@ -1,8 +1,8 @@
 #ifndef IO_CONTEXT_HPP
 #define IO_CONTEXT_HPP
 
-#include <string>
 #include <queue>
+#include <string>
 #include <mutex>
 
 namespace net {
@@ -17,6 +17,10 @@ inline std::ostream& operator<<(std::ostream& os, const message& msg) {
     return (os << msg.timestamp << ' ' << msg.sender << "> " << msg.content);
 }
 
+
+/**
+ *
+ */
 class io_context {
 public:
     [[nodiscard]] bool has_incoming() const noexcept {

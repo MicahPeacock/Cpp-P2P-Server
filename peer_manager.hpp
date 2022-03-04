@@ -1,23 +1,23 @@
 #ifndef PEER_MANAGER_HPP
 #define PEER_MANAGER_HPP
 
-#include "net/udp.hpp"
 #include "net/buffer.hpp"
+#include "net/udp.hpp"
+
+#include "io_context.hpp"
 #include "logger.hpp"
 #include "shared_state.hpp"
-#include "io_context.hpp"
 
 #include <algorithm>
 #include <chrono>
-#include <sstream>
 #include <memory>
 #include <mutex>
-#include <utility>
-#include <vector>
+#include <sstream>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
-#include <numeric>
-#include <thread>
+#include <utility>
+#include <vector>
 
 using namespace std::chrono;
 
@@ -58,6 +58,9 @@ public:
         log_source(src.to_string(), peers);
     }
 
+    /**
+     *
+     */
     void run() {
         std::thread([self = shared_from_this()](net::udp::socket s) {
             self->update(s);
@@ -76,6 +79,10 @@ public:
     }
 
 private:
+    /**
+     *
+     * @param sock
+     */
     void broadcast(const net::udp::socket& sock) {
         while(m_state->is_running()) {
             if(m_ioc.has_outgoing()) {
@@ -87,6 +94,10 @@ private:
         std::cout << "Broadcasting stopped!" << std::endl;
     }
 
+    /**
+     *
+     * @param sock
+     */
     void update(const net::udp::socket& sock) {
         if(debug_mode)
             std::cerr << "Scheduling keepalive updates..." << std::endl;
@@ -102,6 +113,10 @@ private:
         std::cout << "Updating stopped!" << std::endl;
     }
 
+    /**
+     *
+     * @param sock
+     */
     void listen(const net::udp::socket& sock) {
         address_type sender;
         if(debug_mode)
@@ -112,15 +127,19 @@ private:
             auto [request, contents] = parse_request(data);
             if(debug_mode) std::cerr << "Got '" << request << "' request from " << sender.to_string() << ": " << contents << std::endl;
             if(request == "peer")
-                on_peer(sender, contents);
+                on_peer(sender, strings::trim(contents));
             else if(request == "snip")
-                on_snip(sender, contents);
+                on_snip(sender, strings::trim(contents));
             else if(request == "stop")
                 break;
         }
         std::cout << "Listening stopped!" << std::endl;
     }
 
+    /**
+     *
+     * @param sock
+     */
     void multicast_update(const net::udp::socket& sock)  {
         const std::string message = "peer" + sock.address().to_string();
         basic_multicast(sock, message);
@@ -128,12 +147,22 @@ private:
             log_sent_peer(addr.to_string(), sock.address().to_string());
     }
 
+    /**
+     *
+     * @param sock
+     * @param message
+     */
     void multicast_snippet(const net::udp::socket& sock, const std::string& message) {
         m_state->increment_timestamp();
         const std::string snippet = "snip" + std::to_string(m_state->timestamp()) + " " + message;
         basic_multicast(sock, snippet);
     }
 
+    /**
+     *
+     * @param sender
+     * @param content
+     */
     void on_peer(const address_type& sender, const std::string& content) {
         const auto& [host, port] = strings::split(content, ':');
         const peer_type new_peer = { host, static_cast<in_port_t>(std::stoul(port)) };
@@ -145,6 +174,11 @@ private:
         if(debug_mode) std::cerr << "Handled peer request" << std::endl;
     }
 
+    /**
+     *
+     * @param sender
+     * @param content
+     */
     void on_snip(const address_type& sender, const std::string& content) {
         const auto message = strings::split(content, ' ');
         const auto timestamp = std::stoul(message.first);
@@ -156,6 +190,9 @@ private:
         log_snippet(m_state->timestamp(), snippet, sender.to_string());
     }
 
+    /**
+     *
+     */
     void clean_peer_list() {
         const auto before = m_state->peers().size();
         const auto current_time = clocks::get_current_time();
@@ -169,6 +206,11 @@ private:
         if(debug_mode) std::cerr << "Removed " << before - m_state->peers().size() << " peers" << std::endl;
     }
 
+    /**
+     *
+     * @param sock
+     * @param message
+     */
     void basic_multicast(const net::udp::socket& sock, const std::string& message) const {
         if(debug_mode) std::cerr << "Sending '" << message << "' to " << m_state->peers().size() << " peers." << std::endl;
         for(const auto& [addr, time] : m_state->peers()) {

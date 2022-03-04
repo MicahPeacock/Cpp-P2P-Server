@@ -1,13 +1,13 @@
 #ifndef LOGGER_HPP
 #define LOGGER_HPP
 
+#include "utils.hpp"
+
+#include <mutex>
 #include <string>
-#include <vector>
 #include <unordered_map>
 #include <unordered_set>
-#include <mutex>
-
-#include "utils.hpp"
+#include <vector>
 
 
 struct source_entry {
@@ -27,6 +27,10 @@ struct snippet_entry {
     std::string sender;
 };
 
+
+/**
+ *
+ */
 class logger {
 public:
     void log_peer(const std::string& peer) {

@@ -2,6 +2,7 @@
 #define BUFFER_HPP
 
 #include <cstdlib>
+
 #include <array>
 #include <string>
 #include <vector>

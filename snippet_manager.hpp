@@ -8,6 +8,10 @@
 #include <thread>
 #include <utility>
 
+
+/**
+ *
+ */
 class snippet_manager : public std::enable_shared_from_this<snippet_manager> {
 public:
     explicit snippet_manager(net::io_context& ioc)

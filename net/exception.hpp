@@ -1,10 +1,11 @@
 #ifndef EXCEPTION_HPP
 #define EXCEPTION_HPP
 
-#include <exception>
-#include <stdexcept>
 #include <cerrno>
 #include <cstring>
+
+#include <exception>
+#include <stdexcept>
 #include <string>
 
 namespace net {

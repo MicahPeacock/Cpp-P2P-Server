@@ -9,6 +9,9 @@
 #include <vector>
 
 
+/**
+ *
+ */
 namespace types {
 
 template<typename T, typename = std::void_t<>>
@@ -25,6 +28,9 @@ constexpr bool is_std_hashable_v = is_std_hashable<T>::value;
 } // types
 
 
+/**
+ *
+ */
 namespace clocks {
 
 using namespace std::chrono;
@@ -55,6 +61,9 @@ std::string get_current_time_str() noexcept {
 } // clocks
 
 
+/**
+ *
+ */
 namespace strings {
 
 /**
@@ -101,6 +110,30 @@ bool contains(const std::string& s, std::string&& target) {
 bool ends_with(const std::string& s, const std::string& ending) {
     if(ending.size() > s.size()) return false;
     return std::equal(ending.rbegin(), ending.rend(), s.rbegin());
+}
+
+bool starts_with(const std::string& s, const std::string& beginning) {
+    if(beginning.size() > s.size()) return false;
+    return std::equal(beginning.begin(), beginning.end(), s.begin());
+}
+
+void ltrim(std::string& s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char c) {
+        return !std::isspace(c);
+    }));
+}
+
+void rtrim(std::string& s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char c) {
+        return !std::isspace(c);
+    }).base(), s.end());
+}
+
+std::string trim(const std::string& s) {
+    std::string ret = s;
+    ltrim(ret);
+    rtrim(ret);
+    return ret;
 }
 
 } // strings

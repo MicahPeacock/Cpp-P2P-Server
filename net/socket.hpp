@@ -2,9 +2,12 @@
 #define SOCKET_HPP
 
 #include "socket_address.hpp"
+
+#include <fcntl.h>
+
 #include <chrono>
 #include <string>
-#include <fcntl.h>
+
 
 namespace net {
 

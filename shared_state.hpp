@@ -2,12 +2,17 @@
 #define SHARED_STATE_HPP
 
 #include "net/socket_address.hpp"
+
 #include "utils.hpp"
 
 #include <atomic>
 #include <mutex>
 #include <unordered_map>
 
+
+/**
+ *
+ */
 class shared_state {
 public:
     using address_type = net::address_v4;

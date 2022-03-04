@@ -1,8 +1,9 @@
 #ifndef SOCKET_ADDRESS_HPP
 #define SOCKET_ADDRESS_HPP
 
-#include "platform.hpp"
 #include "exception.hpp"
+#include "platform.hpp"
+
 #include "../utils.hpp"
 
 #include <cstring>
